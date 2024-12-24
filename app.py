@@ -45,6 +45,17 @@ def send_email(subject, recipient, body):
     except Exception as e:
         print(f"Error sending email: {e}")
         return False
+    
+# Utility function to send organizer notification
+def send_organizer_notification():
+    players = Player.query.filter_by(status='signed up').all()
+    signed_players = [player.name for player in players]
+
+    email_subject = "Weekly Volleyball Organizer: Roster Update"
+    email_body = f"Here is the list of currently signed-up players:\n\n" + "\n".join(signed_players)
+
+    for organizer in organizers:
+        send_email(email_subject, organizer, email_body)  # Replace with organizer's email
 
 # Utility function to send sign-up notifications
 def send_signup_notifications(player):
@@ -108,14 +119,15 @@ def signup():
 # Endpoint to cancel sign-up
 @app.route('/cancel', methods=['POST'])
 def cancel():
-    name = request.form.get('name')
-    email = request.form.get('email')
-    phone = request.form.get('phone')
+    data = request.get_json()  # Parse JSON data
+    name = data.get('name')
+    email = data.get('email')
+    phone = data.get('phone')
     
-    print(f"Received data - Name: {name}, Email: {email}, Phone: {phone}")
-    
+    print(f"Cancel request received - Name: {name}, Email: {email}, Phone: {phone}")
+
     if not email:
-        return render_template('signup_form.html',message="Phone number is required!"),400
+        return jsonify({"error": "Email is required!"}), 400
 
     # Find and update the player's status
     player = Player.query.filter_by(email=email).first()
@@ -126,21 +138,12 @@ def cancel():
         # Respond immediately to the user
         response_message = {"message": f"{player.name}'s sign-up has been canceled!"}
         threading.Thread(target=send_signup_notifications, args=(player,)).start()
-        return render_template('signup_form.html',message=response_message), 201
+        return jsonify(response_message), 201
 
-    return render_template('signup_form.html',message="Player not found!"),404
+    return jsonify({"error": "Player not found!"}), 404
 
-# Utility function to send organizer notification
-def send_organizer_notification():
-    players = Player.query.filter_by(status='signed up').all()
-    signed_players = [player.name for player in players]
 
-    email_subject = "Weekly Volleyball Organizer: Roster Update"
-    email_body = f"Here is the list of currently signed-up players:\n\n" + "\n".join(signed_players)
-
-    for organizer in organizers:
-        send_email(email_subject, organizer, email_body)  # Replace with organizer's email
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True,host="0.0.0.0", port=5000)

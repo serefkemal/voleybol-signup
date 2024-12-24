@@ -73,13 +73,15 @@
 
 <script>
     document.getElementById('signup-form').onsubmit = async function (e) {
-        e.preventDefault(); // Prevent form submission
+        e.preventDefault(); // Prevent default form submission
         const formData = new FormData(this);
         const data = {
             name: formData.get('name'),
             email: formData.get('email'),
             phone: formData.get('phone'),
         };
+
+        console.log("Sending data:", data);
 
         try {
             const response = await fetch('/signup', {
@@ -89,8 +91,10 @@
             });
 
             const result = await response.json();
-            if (response.status === 400 && result.error) {
-                // Show the cancel message and pre-fill the cancel form
+            console.log("Response received:", result);
+
+            if (response.status === 400 && result.error === "Player with this phone or email already signed up!") {
+                // Show the cancel message and populate the cancel form
                 document.getElementById('already-signed-up-message').style.display = 'block';
                 const cancelForm = document.getElementById('cancel-form');
                 cancelForm.querySelector('input[name="name"]').value = data.name;
@@ -99,12 +103,13 @@
             } else if (response.ok) {
                 alert(result.message || 'Sign up successful!');
             } else {
-                alert('Error: ' + (result.error || 'Unknown error'));
+                alert('Unexpected error occurred.');
             }
         } catch (error) {
             console.error('Error:', error);
         }
     };
+
 
     document.getElementById('cancel-form').onsubmit = async function (e) {
         e.preventDefault(); // Prevent form submission
@@ -115,16 +120,19 @@
             phone: formData.get('phone'),
         };
 
+        console.log("Cancel data being sent:", data);
+
         try {
             const response = await fetch('/cancel', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data),
+                body: JSON.stringify(data), // Send as JSON
             });
 
             const result = await response.json();
             if (response.ok) {
                 alert(result.message || 'Signup canceled successfully!');
+                document.getElementById('already-signed-up-message').style.display = 'none'; // Hide cancel form
             } else {
                 alert('Error: ' + (result.error || 'Unknown error'));
             }
@@ -136,3 +144,10 @@
 
 </body>
 </html>
+
+
+
+
+
+
+
