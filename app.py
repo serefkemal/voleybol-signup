@@ -68,35 +68,32 @@ def send_signup_notifications(player):
 def signup_form():
     return render_template('signup_form.html')
 
-# Endpoint to sign up
 @app.route('/signup', methods=['POST'])
 def signup():
-    name = request.form.get('name')
-    email = request.form.get('email')
-    phone = request.form.get('phone')
+    name = request.json.get('name')
+    email = request.json.get('email')
+    phone = request.json.get('phone')
+
+    print(f"Received data - Name: {name}, Email: {email}, Phone: {phone}")
     
     # Basic validation
     if not name or not email or not phone:
-        return render_template('signup_form.html', message="All fields are required!")
+        return jsonify({"error": "All fields are required!"}), 400
 
     # Check if the player already exists
     existing_player = Player.query.filter((Player.phone == phone) | (Player.email == email)).first()
     if existing_player:
         if existing_player.status == 'canceled':
-            # Update the existing player's status and other details
+            # Update existing player to re-sign up
             existing_player.name = name
             existing_player.email = email
             existing_player.status = 'signed up'
             db.session.commit()
 
-            # Respond immediately to the user
-            response_message = {"message": f"{existing_player.name} has re-signed up successfully!"}
             threading.Thread(target=send_signup_notifications, args=(existing_player,)).start()
-            return render_template('signup_form.html',message=response_message), 201
-            return jsonify(response_message), 201
+            return jsonify({"message": f"{existing_player.name} has re-signed up successfully!"}), 200
 
-        # Return an error if the player is already signed up
-        return render_template('signup_form.html',message="Player with this phone or email already signed up!"),400
+        # Already signed up case
         return jsonify({"error": "Player with this phone or email already signed up!"}), 400
 
     # Add the new player
@@ -104,11 +101,9 @@ def signup():
     db.session.add(player)
     db.session.commit()
 
-    # Respond immediately to the user
-    response_message = {"message": f"{player.name} has signed up successfully!"}
     threading.Thread(target=send_signup_notifications, args=(player,)).start()
-    return render_template('signup_form.html',message=response_message), 201
-    return jsonify(response_message), 201
+    return jsonify({"message": f"{player.name} has signed up successfully!"}), 201
+
 
 # Endpoint to cancel sign-up
 @app.route('/cancel', methods=['POST'])
@@ -117,12 +112,13 @@ def cancel():
     email = request.form.get('email')
     phone = request.form.get('phone')
     
+    print(f"Received data - Name: {name}, Email: {email}, Phone: {phone}")
+    
     if not email:
         return render_template('signup_form.html',message="Phone number is required!"),400
-        return jsonify({"error": "Phone number is required!"}), 400
 
     # Find and update the player's status
-    player = Player.query.filter_by(phone=phone).first()
+    player = Player.query.filter_by(email=email).first()
     if player:
         player.status = 'canceled'
         db.session.commit()
@@ -133,7 +129,6 @@ def cancel():
         return render_template('signup_form.html',message=response_message), 201
 
     return render_template('signup_form.html',message="Player not found!"),404
-    return jsonify({"error": "Player not found!"}), 404
 
 # Utility function to send organizer notification
 def send_organizer_notification():

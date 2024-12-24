@@ -43,12 +43,10 @@
         .cancel-button:hover {
             background-color: #d32f2f;
         }
-        .button-container {
-            margin-top: 10px;
-        }
         .message {
             text-align: center;
             margin-top: 20px;
+            color: #333;
         }
     </style>
 </head>
@@ -56,25 +54,85 @@
 
 <h2 style="text-align:center;">Sign Up for Weekly Volleyball Game</h2>
 
-<form action="/signup" method="POST">
+<form id="signup-form">
     <input type="text" name="name" placeholder="Your Name" required><br>
     <input type="email" name="email" placeholder="Your Email" required><br>
     <input type="text" name="phone" placeholder="Your Phone Number" required><br>
-    <div class="button-container">
-        <button type="submit">Sign Up</button>
-    </div>
+    <button type="submit">Sign Up</button>
 </form>
 
-<form action="/cancel" method="POST">
-    <input type="email" name="email" placeholder="Your Email" required><br>
-    <div class="button-container">
-        <button type="submit" class="cancel-button">Cancel</button>
-    </div>
-</form>
+<div class="message" id="already-signed-up-message" style="display: none;">
+    You are already signed up! Are you trying to cancel your signup?
+    <form id="cancel-form">
+        <input type="hidden" name="name">
+        <input type="hidden" name="email">
+        <input type="hidden" name="phone">
+        <button type="submit" class="cancel-button">Cancel Signup</button>
+    </form>
+</div>
 
-{% if message %}
-    <div class="message">{{ message }}</div>
-{% endif %}
+<script>
+    document.getElementById('signup-form').onsubmit = async function (e) {
+        e.preventDefault(); // Prevent form submission
+        const formData = new FormData(this);
+        const data = {
+            name: formData.get('name'),
+            email: formData.get('email'),
+            phone: formData.get('phone'),
+        };
+
+        try {
+            const response = await fetch('/signup', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+
+            const result = await response.json();
+            if (response.status === 400 && result.error) {
+                // Show the cancel message and pre-fill the cancel form
+                document.getElementById('already-signed-up-message').style.display = 'block';
+                const cancelForm = document.getElementById('cancel-form');
+                cancelForm.querySelector('input[name="name"]').value = data.name;
+                cancelForm.querySelector('input[name="email"]').value = data.email;
+                cancelForm.querySelector('input[name="phone"]').value = data.phone;
+            } else if (response.ok) {
+                alert(result.message || 'Sign up successful!');
+            } else {
+                alert('Error: ' + (result.error || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    };
+
+    document.getElementById('cancel-form').onsubmit = async function (e) {
+        e.preventDefault(); // Prevent form submission
+        const formData = new FormData(this);
+        const data = {
+            name: formData.get('name'),
+            email: formData.get('email'),
+            phone: formData.get('phone'),
+        };
+
+        try {
+            const response = await fetch('/cancel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data),
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                alert(result.message || 'Signup canceled successfully!');
+            } else {
+                alert('Error: ' + (result.error || 'Unknown error'));
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    };
+</script>
 
 </body>
 </html>
