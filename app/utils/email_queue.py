@@ -34,7 +34,7 @@ class EmailQueue:
                         )
                 time.sleep(1)  # Prevent CPU overuse
             except Exception as e:
-                print(f"Error processing email queue: {str(e)}")  # Use print since logger needs app context
+                self.app.logger.error(f"Error processing email queue: {str(e)}") 
 
     def _send_email(self, template_name, recipient, **kwargs):
         try:

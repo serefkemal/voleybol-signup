@@ -7,7 +7,7 @@ class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key')
     
     # Database
-    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:///volleyball.db')
+    SQLALCHEMY_DATABASE_URI = os.getenv('SQLALCHEMY_DATABASE_URI')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Email
@@ -19,13 +19,18 @@ class Config:
     MAIL_DEFAULT_SENDER = os.getenv('MAIL_USERNAME')
     
     # Game Settings
-    DEFAULT_GAME_START_TIME = time(19, 0)  # 7:00 PM
-    DEFAULT_GAME_END_TIME = time(21, 0)    # 9:00 PM
-    DEFAULT_LOCATION = "Main Volleyball Court"
-    MAX_PLAYERS = 14
+    DEFAULT_GAME_START_TIME = time(21, 0)  # 9:00 PM
+    DEFAULT_GAME_END_TIME = time(23, 0)    # 11:00 PM
+    DEFAULT_LOCATION = "Hüseyin Avni Sözen Anadolu Lisesi"
+    MAX_PLAYERS = 12
     
     # Logging
     LOG_FILE = 'volleyball.log'
 
     # Organizers
     ORGANIZERS = ['serefkemal@gmail.com']
+    
+    # WhatsApp Configuration
+    WHATSAPP_TOKEN = os.getenv('WHATSAPP_TOKEN')
+    WHATSAPP_ENABLED = os.getenv('WHATSAPP_ENABLED', 'False').lower() == 'true'
+    WHATSAPP_PHONE_ID = os.getenv('WHATSAPP_PHONE_ID')

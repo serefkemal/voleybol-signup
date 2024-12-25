@@ -4,13 +4,35 @@ from app.models import Player, WeeklyGame, PlayerGameSignup
 from app.utils.validators import validate_email_format, validate_phone_format
 from app.templates.emails import EMAIL_TEMPLATES
 from datetime import datetime
-import threading
+import threading, requests
+from app.utils.whatsapp_notifications import WhatsAppNotifier
+
+
 
 main = Blueprint('main', __name__)
+
+def get_current_game():
+    current_game = WeeklyGame.query.filter(
+        WeeklyGame.date >= datetime.now().date()
+    ).first()
+    
+    if not current_game:
+        next_game_date = datetime.now().date()
+        current_game = WeeklyGame(
+            date=next_game_date,
+            location=current_app.config['DEFAULT_LOCATION'],
+            start_time=current_app.config['DEFAULT_GAME_START_TIME'],
+            end_time=current_app.config['DEFAULT_GAME_END_TIME']
+        )
+        db.session.add(current_game)
+        db.session.commit()
+    
+    return current_game
 
 def send_signup_notifications(app, player, game):
     with app.app_context():
         try:
+            print(app.config['WHATSAPP_TOKEN'])
             # Format game details
             game_date = game.date.strftime('%A, %B %d, %Y')
             game_start = game.start_time.strftime('%I:%M %p')
@@ -44,6 +66,31 @@ def send_signup_notifications(app, player, game):
                     max_players=app.config['MAX_PLAYERS']
                 )
             
+                # Add WhatsApp notification
+                if app.config['WHATSAPP_ENABLED'] and player.phone:
+                    whatsapp = WhatsAppNotifier(app,app.config['WHATSAPP_PHONE_ID'],app.config['WHATSAPP_TOKEN'])
+                    game_date = game.date.strftime('%A, %B %d, %Y')
+                    game_time = f"{game.start_time.strftime('%I:%M %p')} - {game.end_time.strftime('%I:%M %p')}"
+                    
+                    message = whatsapp.format_signup_message(
+                        player.name,
+                        game_date,
+                        game_time,
+                        game.location
+                    )
+                
+                    # Convert phone to international format (assuming Turkish numbers)
+                    phone_digits = ''.join(filter(str.isdigit, player.phone))
+                    if phone_digits.startswith('5'):
+                        phone_digits = '90' + phone_digits
+                    
+                    # In test mode, send template message
+                    whatsapp.send_message(
+                        phone_digits, 
+                        message,  # message not needed for template
+                        use_template=True  # This will use the hello_world template
+                    )
+            
                 # Queue update email to organizers
                 player_list = get_player_list(game.id)
                 for organizer in app.config['ORGANIZERS']:
@@ -66,6 +113,29 @@ def send_signup_notifications(app, player, game):
                 game_date=game.date.strftime('%A, %B %d, %Y')
                 )
 
+                # Add WhatsApp notification
+                if app.config['WHATSAPP_ENABLED'] and player.phone:
+                    whatsapp = WhatsAppNotifier(app,app.config['WHATSAPP_PHONE_ID'],app.config['WHATSAPP_TOKEN'])
+                    game_date = game.date.strftime('%A, %B %d, %Y')
+                    game_time = f"{game.start_time.strftime('%I:%M %p')} - {game.end_time.strftime('%I:%M %p')}"
+                    
+                    message = whatsapp.format_cancellation_message(
+                        player.name,
+                        game_date,
+                    )
+                    
+                    # Convert phone to international format (assuming Turkish numbers)
+                    phone_digits = ''.join(filter(str.isdigit, player.phone))
+                    if phone_digits.startswith('5'):
+                        phone_digits = '90' + phone_digits
+                    
+                    # In test mode, send template message
+                    whatsapp.send_message(
+                        phone_digits, 
+                        message,  # message not needed for template
+                        use_template=True  # This will use the hello_world template
+                    )
+                
                 # Queue update email to organizers
                 player_list = get_player_list(game.id)
                 for organizer in app.config['ORGANIZERS']:
@@ -224,20 +294,46 @@ def cancel():
         db.session.rollback()
         return jsonify({"error": "An unexpected error occurred"}), 500
 
-def get_current_game():
-    current_game = WeeklyGame.query.filter(
-        WeeklyGame.date >= datetime.now().date()
-    ).first()
-    
-    if not current_game:
-        next_game_date = datetime.now().date()
-        current_game = WeeklyGame(
-            date=next_game_date,
-            location=current_app.config['DEFAULT_LOCATION'],
-            start_time=current_app.config['DEFAULT_GAME_START_TIME'],
-            end_time=current_app.config['DEFAULT_GAME_END_TIME']
-        )
-        db.session.add(current_game)
-        db.session.commit()
-    
-    return current_game
+@main.route('/test-whatsapp-token')
+def test_whatsapp_token():
+    try:
+        token = current_app.config['WHATSAPP_TOKEN']
+        phone_id = current_app.config['WHATSAPP_PHONE_ID']
+        
+        # Basic validation
+        if not token or not phone_id:
+            return jsonify({
+                "status": "error",
+                "message": "Missing token or phone ID"
+            }), 400
+
+        # Log token details (safely)
+        token_info = {
+            "length": len(token),
+            "starts_with": token[:5] if token else None,
+            "contains_whitespace": any(c.isspace() for c in token),
+            "phone_id": phone_id
+        }
+
+        # Test Graph API directly
+        test_url = "https://graph.facebook.com/v21.0/me"
+        headers = {"Authorization": f"Bearer {token.strip()}"}
+        
+        response = requests.get(test_url, headers=headers)
+        
+        return jsonify({
+            "status": "info",
+            "token_info": token_info,
+            "test_response": {
+                "status_code": response.status_code,
+                "content": response.json() if response.status_code == 200 else response.text
+            }
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"Token test error: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+

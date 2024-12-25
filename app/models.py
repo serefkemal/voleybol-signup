@@ -5,7 +5,7 @@ class WeeklyGame(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.DateTime, nullable=False)
     location = db.Column(db.String(200), nullable=False)
-    max_players = db.Column(db.Integer, default=14)
+    max_players = db.Column(db.Integer, default=12)
     start_time = db.Column(db.Time, nullable=False)
     end_time = db.Column(db.Time, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
