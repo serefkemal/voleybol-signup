@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail, Message
-import os, threading
+import os, threading, re
 
 organizers = ['serefkemal@gmail.com']
 
@@ -84,6 +84,10 @@ def signup():
     name = request.json.get('name')
     email = request.json.get('email')
     phone = request.json.get('phone')
+    
+    # Validate phone format
+    if not re.match(r'^\(5[0-9]{2}\) [0-9]{3} [0-9]{2} [0-9]{2}$', phone):
+        return jsonify({"error": "Invalid phone number format!"}), 400
 
     print(f"Received data - Name: {name}, Email: {email}, Phone: {phone}")
     

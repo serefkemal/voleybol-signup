@@ -1,4 +1,5 @@
-voleybol_env.sh
+*.env
+gcloud_deploy
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
