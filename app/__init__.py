@@ -19,10 +19,11 @@ def create_app(config_class=Config):
     # Setup logging
     setup_logging(app)
 
+    # Register blueprints
+    from app.routes import main
+    app.register_blueprint(main)
+
     with app.app_context():
-        # Import routes after db is initialized
-        from app import routes
-        
         # Create database tables
         db.create_all()
 

@@ -53,60 +53,60 @@ Recent Changes:
     }
 }
 
-# Modified send_signup_notifications function for app.py
-def send_signup_notifications(player, game):
-    try:
-        # Format game details
-        game_date = game.date.strftime('%A, %B %d, %Y')
-        game_start = game.start_time.strftime('%I:%M %p')
-        game_end = game.end_time.strftime('%I:%M %p')
+# # Modified send_signup_notifications function for app.py
+# def send_signup_notifications(player, game):
+#     try:
+#         # Format game details
+#         game_date = game.date.strftime('%A, %B %d, %Y')
+#         game_start = game.start_time.strftime('%I:%M %p')
+#         game_end = game.end_time.strftime('%I:%M %p')
         
-        # Get player position
-        player_position = PlayerGameSignup.query.filter_by(
-            game_id=game.id,
-            is_cancelled=False
-        ).count()
+#         # Get player position
+#         player_position = PlayerGameSignup.query.filter_by(
+#             game_id=game.id,
+#             is_cancelled=False
+#         ).count()
         
-        # Queue confirmation email to player
-        email_queue.add_to_queue(
-            'signup_confirmation',
-            player.email,
-            player_name=player.name,
-            game_date=game_date,
-            game_start_time=game_start,
-            game_end_time=game_end,
-            game_location=game.location,
-            position=player_position,
-            max_players=app.config['MAX_PLAYERS']
-        )
+#         # Queue confirmation email to player
+#         email_queue.add_to_queue(
+#             'signup_confirmation',
+#             player.email,
+#             player_name=player.name,
+#             game_date=game_date,
+#             game_start_time=game_start,
+#             game_end_time=game_end,
+#             game_location=game.location,
+#             position=player_position,
+#             max_players=app.config['MAX_PLAYERS']
+#         )
         
-        # Queue update email to organizers
-        player_list = get_player_list(game.id)
-        for organizer in app.config['ORGANIZERS']:
-            email_queue.add_to_queue(
-                'organizer_update',
-                organizer,
-                game_date=game_date,
-                player_list=player_list,
-                player_count=player_position,
-                max_players=app.config['MAX_PLAYERS'],
-                recent_change=f"Added: {player.name}"
-            )
+#         # Queue update email to organizers
+#         player_list = get_player_list(game.id)
+#         for organizer in app.config['ORGANIZERS']:
+#             email_queue.add_to_queue(
+#                 'organizer_update',
+#                 organizer,
+#                 game_date=game_date,
+#                 player_list=player_list,
+#                 player_count=player_position,
+#                 max_players=app.config['MAX_PLAYERS'],
+#                 recent_change=f"Added: {player.name}"
+#             )
             
-    except Exception as e:
-        app.logger.error(f"Error sending signup notifications: {str(e)}")
+#     except Exception as e:
+#         app.logger.error(f"Error sending signup notifications: {str(e)}")
 
-# Helper function to get formatted player list
-def get_player_list(game_id):
-    signups = PlayerGameSignup.query.filter_by(
-        game_id=game_id,
-        is_cancelled=False
-    ).join(Player).order_by(PlayerGameSignup.signup_time).all()
+# # Helper function to get formatted player list
+# def get_player_list(game_id):
+#     signups = PlayerGameSignup.query.filter_by(
+#         game_id=game_id,
+#         is_cancelled=False
+#     ).join(Player).order_by(PlayerGameSignup.signup_time).all()
     
-    return "\n".join([
-        f"{i+1}. {signup.player.name} ({signup.signup_time.strftime('%I:%M %p')})"
-        for i, signup in enumerate(signups)
-    ])
+#     return "\n".join([
+#         f"{i+1}. {signup.player.name} ({signup.signup_time.strftime('%I:%M %p')})"
+#         for i, signup in enumerate(signups)
+#     ])
 
-# Initialize email queue in app.py
-email_queue = EmailQueue(app, mail)
+# # Initialize email queue in app.py
+# email_queue = EmailQueue(app, mail)

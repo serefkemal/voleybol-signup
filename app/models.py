@@ -1,8 +1,5 @@
 from datetime import datetime
-from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
-
-db = SQLAlchemy()
+from app import db  # Update this line
 
 class WeeklyGame(db.Model):
     id = db.Column(db.Integer, primary_key=True)

@@ -4,6 +4,7 @@ import threading
 import time
 from flask_mail import Message
 from jinja2 import Template
+from app.templates.emails import EMAIL_TEMPLATES
 
 class EmailQueue:
     def __init__(self, app, mail):
@@ -33,7 +34,7 @@ class EmailQueue:
                         )
                 time.sleep(1)  # Prevent CPU overuse
             except Exception as e:
-                self.app.logger.error(f"Error processing email queue: {str(e)}")
+                print(f"Error processing email queue: {str(e)}")  # Use print since logger needs app context
 
     def _send_email(self, template_name, recipient, **kwargs):
         try:

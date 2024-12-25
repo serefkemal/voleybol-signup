@@ -1,15 +1,106 @@
-from flask import jsonify, request, render_template, current_app
+from flask import Blueprint, jsonify, request, render_template, current_app
 from app import db
 from app.models import Player, WeeklyGame, PlayerGameSignup
 from app.utils.validators import validate_email_format, validate_phone_format
+from app.templates.emails import EMAIL_TEMPLATES
 from datetime import datetime
 import threading
 
-@current_app.route('/')
+main = Blueprint('main', __name__)
+
+def send_signup_notifications(app, player, game):
+    with app.app_context():
+        try:
+            # Format game details
+            game_date = game.date.strftime('%A, %B %d, %Y')
+            game_start = game.start_time.strftime('%I:%M %p')
+            game_end = game.end_time.strftime('%I:%M %p')
+            
+            # Get player position
+            player_position = PlayerGameSignup.query.filter_by(
+                game_id=game.id,
+                is_cancelled=False
+            ).count()
+            
+            player_signups = PlayerGameSignup.query.filter_by(
+                    player_id=player.id,
+                    game_id=game.id,
+                )
+            
+            signup = max(player_signups, key=lambda x: x.signup_time)
+            
+            # Send sign up notification
+            if signup.is_cancelled == False:
+                # Queue confirmation email to player
+                app.email_queue.add_to_queue(
+                    'signup_confirmation',
+                    player.email,
+                    player_name=player.name,
+                    game_date=game_date,
+                    game_start_time=game_start,
+                    game_end_time=game_end,
+                    game_location=game.location,
+                    position=player_position,
+                    max_players=app.config['MAX_PLAYERS']
+                )
+            
+                # Queue update email to organizers
+                player_list = get_player_list(game.id)
+                for organizer in app.config['ORGANIZERS']:
+                    app.email_queue.add_to_queue(
+                        'organizer_update',
+                        organizer,
+                        game_date=game_date,
+                        player_list=player_list,
+                        player_count=player_position,
+                        max_players=app.config['MAX_PLAYERS'],
+                        recent_change=f"Added: {player.name}"
+                    )
+            
+            # Send cancellation notification
+            elif signup.is_cancelled == True:
+                app.email_queue.add_to_queue(
+                'cancellation_confirmation',
+                player.email,
+                player_name=player.name,
+                game_date=game.date.strftime('%A, %B %d, %Y')
+                )
+
+                # Queue update email to organizers
+                player_list = get_player_list(game.id)
+                for organizer in app.config['ORGANIZERS']:
+                    app.email_queue.add_to_queue(
+                        'organizer_update',
+                        organizer,
+                        game_date=game_date,
+                        player_list=player_list,
+                        player_count=player_position,
+                        max_players=app.config['MAX_PLAYERS'],
+                        recent_change=f"Removed: {player.name}"
+                    )
+            
+            
+                
+        except Exception as e:
+            print(f"Error sending signup notifications: {str(e)}")
+
+
+def get_player_list(game_id):
+    signups = PlayerGameSignup.query.filter_by(
+        game_id=game_id,
+        is_cancelled=False
+    ).join(Player).order_by(PlayerGameSignup.signup_time).all()
+    
+    return "\n".join([
+        f"{i+1}. {signup.player.name} ({signup.signup_time.strftime('%I:%M %p')})"
+        for i, signup in enumerate(signups)
+    ])
+
+@main.route('/')
 def signup_form():
     return render_template('signup_form.html')
 
-@current_app.route('/player-count', methods=['GET'])
+@main.route('/player-count', methods=['GET'])
 def get_player_count():
     try:
         count = PlayerGameSignup.query.filter_by(
@@ -24,7 +115,7 @@ def get_player_count():
         current_app.logger.error(f"Error getting player count: {str(e)}")
         return jsonify({"error": "Could not fetch player count"}), 500
 
-@current_app.route('/signup', methods=['POST'])
+@main.route('/signup', methods=['POST'])
 def signup():
     try:
         data = request.get_json()
@@ -61,7 +152,7 @@ def signup():
             ).first()
             
             if existing_signup:
-                return jsonify({"error": "Player already signed up!"}), 400
+                return jsonify({"error": "Player with this phone or email already signed up!"}), 400
 
             player = existing_player
             player.name = name  # Update name if changed
@@ -75,9 +166,10 @@ def signup():
         db.session.commit()
 
         # Send notifications in background
+        app = current_app._get_current_object()  # Get the actual app object
         threading.Thread(
             target=send_signup_notifications,
-            args=(player, current_game)
+            args=(app, player, current_game)
         ).start()
 
         return jsonify({"message": f"{player.name} has signed up successfully!"}), 201
@@ -87,7 +179,7 @@ def signup():
         db.session.rollback()
         return jsonify({"error": "An unexpected error occurred"}), 500
 
-@current_app.route('/cancel', methods=['POST'])
+@main.route('/cancel', methods=['POST'])
 def cancel():
     try:
         data = request.get_json()
@@ -116,13 +208,12 @@ def cancel():
         signup.is_cancelled = True
         db.session.commit()
 
-        # Send cancellation notification
-        current_app.email_queue.add_to_queue(
-            'cancellation_confirmation',
-            player.email,
-            player_name=player.name,
-            game_date=current_game.date.strftime('%A, %B %d, %Y')
-        )
+        # Send notifications in background
+        app = current_app._get_current_object()  # Get the actual app object
+        threading.Thread(
+            target=send_signup_notifications,
+            args=(app, player, current_game)
+        ).start()
 
         return jsonify({"message": f"{player.name}'s signup has been canceled!"}), 200
 
@@ -137,7 +228,6 @@ def get_current_game():
     ).first()
     
     if not current_game:
-        # Create new game for next Wednesday
         next_game_date = datetime.now().date()
         current_game = WeeklyGame(
             date=next_game_date,
