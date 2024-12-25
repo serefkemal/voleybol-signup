@@ -156,6 +156,7 @@ def signup():
 
             player = existing_player
             player.name = name  # Update name if changed
+            player.signup_status = 'signed up'  # Update status when re-signing up
         else:
             player = Player(name=name, email=email, phone=phone)
             db.session.add(player)
@@ -206,6 +207,7 @@ def cancel():
 
         # Cancel the signup
         signup.is_cancelled = True
+        player.signup_status = 'cancelled'
         db.session.commit()
 
         # Send notifications in background

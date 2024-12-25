@@ -16,7 +16,7 @@ class Player(db.Model):
     name = db.Column(db.String(50), nullable=False)
     phone = db.Column(db.String(15), unique=True, nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
-    is_deleted = db.Column(db.Boolean, default=False)
+    signup_status = db.Column(db.String(20), default='signed up')  # 'signed up' or 'cancelled'
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
