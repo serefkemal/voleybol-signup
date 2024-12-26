@@ -6,7 +6,10 @@
     <title>Volleyball Signup</title>
 </head>
 <body>
-    <div id="react-root"></div>
-    <script src="{{ url_for('static', filename='dist/bundle.js') }}"></script>
+    <!-- Make sure this div exists when React tries to mount -->
+    <div id="signup-root"></div>
+    
+    <!-- Load the bundle after the DOM element exists -->
+    <script defer src="{{ url_for('static', filename='dist/signup.bundle.js') }}"></script>
 </body>
 </html>

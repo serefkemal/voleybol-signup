@@ -20,9 +20,11 @@ def create_app(config_class=Config):
     # Setup logging
     setup_logging(app)
 
-    # Register blueprints
     from app.routes import main
+    from app.admin_routes import admin
+    
     app.register_blueprint(main)
+    app.register_blueprint(admin)
 
     with app.app_context():
         # Create database tables

@@ -34,3 +34,6 @@ class Config:
     WHATSAPP_TOKEN = os.getenv('WHATSAPP_TOKEN')
     WHATSAPP_ENABLED = os.getenv('WHATSAPP_ENABLED', 'False').lower() == 'true'
     WHATSAPP_PHONE_ID = os.getenv('WHATSAPP_PHONE_ID')
+    
+    # Admin
+    ADMIN_PASSWORD=os.getenv('ADMIN_PASSWORD')
