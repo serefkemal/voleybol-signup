@@ -32,7 +32,6 @@ def get_current_game():
 def send_signup_notifications(app, player, game):
     with app.app_context():
         try:
-            print(app.config['WHATSAPP_TOKEN'])
             # Format game details
             game_date = game.date.strftime('%A, %B %d, %Y')
             game_start = game.start_time.strftime('%I:%M %p')
@@ -152,8 +151,7 @@ def send_signup_notifications(app, player, game):
             
                 
         except Exception as e:
-            print(f"Error sending signup notifications: {str(e)}")
-
+            current_app.logger.error(f"Error sending signup notifications: {str(e)}")
 
 def get_player_list(game_id):
     signups = PlayerGameSignup.query.filter_by(

@@ -28,7 +28,6 @@ def create_app(config_class=Config):
 
     with app.app_context():
         # Create database tables
-        print(f"SQLALCHEMY_DATABASE_URI in init.py: {os.getenv('SQLALCHEMY_DATABASE_URI')}")
         db.create_all()
 
         # Initialize email queue
