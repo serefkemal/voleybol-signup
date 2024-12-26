@@ -2,7 +2,9 @@ const path = require('path');
 
 module.exports = {
   entry: {
-    signup: './app/static/js/signup.js',
+    main: './app/static/js/main.js',
+    gameSignup: './app/static/js/gameSignup.js',
+    signupDashboard: './app/static/js/signupDashboard.js',
     adminLogin: './app/static/js/adminLogin.js',
     adminDashboard: './app/static/js/adminDashboard.js',
     gameDashboard: './app/static/js/gameDashboard.js'

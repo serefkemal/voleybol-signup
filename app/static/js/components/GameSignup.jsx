@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from './ui/alert-dialog';
 
-const VolleyballSignup = () => {
+const GameSignup = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -159,4 +159,4 @@ const VolleyballSignup = () => {
   );
 };
 
-export default VolleyballSignup;
+export default GameSignup;

@@ -1,11 +1,11 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import VolleyballSignup from './components/VolleyballSignup';
+import GameSignup from './components/GameSignup';
 import './styles.css';
 
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', () => {
-  const container = document.getElementById('signup-root');
+  const container = document.getElementById('game-signup-root');
   
   if (!container) {
     console.error('Could not find signup-root element!');
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const root = createRoot(container);
     root.render(
       <React.StrictMode>
-        <VolleyballSignup />
+        <GameSignup />
       </React.StrictMode>
     );
   } catch (error) {

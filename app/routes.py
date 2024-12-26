@@ -166,10 +166,6 @@ def get_player_list(game_id):
         for i, signup in enumerate(signups)
     ])
 
-@main.route('/')
-def signup_form():
-    return render_template('signup_form.html')
-
 @main.route('/player-count', methods=['GET'])
 def get_player_count():
     try:
@@ -302,46 +298,58 @@ def cancel():
         db.session.rollback()
         return jsonify({"error": "An unexpected error occurred"}), 500
 
-@main.route('/test-whatsapp-token')
-def test_whatsapp_token():
-    try:
-        token = current_app.config['WHATSAPP_TOKEN']
-        phone_id = current_app.config['WHATSAPP_PHONE_ID']
-        
-        # Basic validation
-        if not token or not phone_id:
-            return jsonify({
-                "status": "error",
-                "message": "Missing token or phone ID"
-            }), 400
+@main.route('/')
+def main_page():
+    return render_template('main.html')
 
-        # Log token details (safely)
-        token_info = {
-            "length": len(token),
-            "starts_with": token[:5] if token else None,
-            "contains_whitespace": any(c.isspace() for c in token),
-            "phone_id": phone_id
-        }
+@main.route('/signup/dashboard')
+def signup_dashboard():
+    return render_template('signup/dashboard.html')
 
-        # Test Graph API directly
-        test_url = "https://graph.facebook.com/v21.0/me"
-        headers = {"Authorization": f"Bearer {token.strip()}"}
-        
-        response = requests.get(test_url, headers=headers)
-        
-        return jsonify({
-            "status": "info",
-            "token_info": token_info,
-            "test_response": {
-                "status_code": response.status_code,
-                "content": response.json() if response.status_code == 200 else response.text
-            }
-        })
+@main.route('/signup/game/<int:game_id>')
+def game_signup(game_id):
+    return render_template('signup/game.html')
 
-    except Exception as e:
-        current_app.logger.error(f"Token test error: {str(e)}")
-        return jsonify({
-            "status": "error",
-            "message": str(e)
-        }), 500
+# @main.route('/test-whatsapp-token')
+# def test_whatsapp_token():
+#     try:
+#         token = current_app.config['WHATSAPP_TOKEN']
+#         phone_id = current_app.config['WHATSAPP_PHONE_ID']
+        
+#         # Basic validation
+#         if not token or not phone_id:
+#             return jsonify({
+#                 "status": "error",
+#                 "message": "Missing token or phone ID"
+#             }), 400
+
+#         # Log token details (safely)
+#         token_info = {
+#             "length": len(token),
+#             "starts_with": token[:5] if token else None,
+#             "contains_whitespace": any(c.isspace() for c in token),
+#             "phone_id": phone_id
+#         }
+
+#         # Test Graph API directly
+#         test_url = "https://graph.facebook.com/v21.0/me"
+#         headers = {"Authorization": f"Bearer {token.strip()}"}
+        
+#         response = requests.get(test_url, headers=headers)
+        
+#         return jsonify({
+#             "status": "info",
+#             "token_info": token_info,
+#             "test_response": {
+#                 "status_code": response.status_code,
+#                 "content": response.json() if response.status_code == 200 else response.text
+#             }
+#         })
+
+#     except Exception as e:
+#         current_app.logger.error(f"Token test error: {str(e)}")
+#         return jsonify({
+#             "status": "error",
+#             "message": str(e)
+#         }), 500
 
