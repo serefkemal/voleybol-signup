@@ -11,21 +11,21 @@ from app.utils.whatsapp_notifications import WhatsAppNotifier
 
 main = Blueprint('main', __name__)
 
-def get_current_game():
+def get_current_game(game_id):
     current_game = WeeklyGame.query.filter(
-        WeeklyGame.date >= datetime.now().date()
+        WeeklyGame.id == game_id
     ).first()
     
-    if not current_game:
-        next_game_date = datetime.now().date()
-        current_game = WeeklyGame(
-            date=next_game_date,
-            location=current_app.config['DEFAULT_LOCATION'],
-            start_time=current_app.config['DEFAULT_GAME_START_TIME'],
-            end_time=current_app.config['DEFAULT_GAME_END_TIME']
-        )
-        db.session.add(current_game)
-        db.session.commit()
+    # if not current_game:
+    #     next_game_date = datetime.now().date()
+    #     current_game = WeeklyGame(
+    #         date=next_game_date,
+    #         location=current_app.config['DEFAULT_LOCATION'],
+    #         start_time=current_app.config['DEFAULT_GAME_START_TIME'],
+    #         end_time=current_app.config['DEFAULT_GAME_END_TIME']
+    #     )
+    #     db.session.add(current_game)
+    #     db.session.commit()
     
     return current_game
 
@@ -128,10 +128,10 @@ def send_signup_notifications(app, player, game):
                     if phone_digits.startswith('5'):
                         phone_digits = '90' + phone_digits
                     
-                    # In test mode, send template message
+                    # In test mode until whatsapp business phone added
                     whatsapp.send_message(
                         phone_digits, 
-                        message,  # message not needed for template
+                        message,
                         use_template=True  # This will use the hello_world template
                     )
                 
@@ -164,23 +164,23 @@ def get_player_list(game_id):
         for i, signup in enumerate(signups)
     ])
 
-@main.route('/player-count', methods=['GET'])
-def get_player_count():
-    try:
-        count = PlayerGameSignup.query.filter_by(
-            is_cancelled=False,
-            game_id=get_current_game().id
-        ).count()
-        return jsonify({
-            "count": count,
-            "max_players": current_app.config['MAX_PLAYERS']
-        })
-    except Exception as e:
-        current_app.logger.error(f"Error getting player count: {str(e)}")
-        return jsonify({"error": "Could not fetch player count"}), 500
+# @main.route('/player-count', methods=['GET'])
+# def get_player_count():
+#     try:
+#         count = PlayerGameSignup.query.filter_by(
+#             is_cancelled=False,
+#             game_id=get_current_game().id
+#         ).count()
+#         return jsonify({
+#             "count": count,
+#             "max_players": current_app.config['MAX_PLAYERS']
+#         })
+#     except Exception as e:
+#         current_app.logger.error(f"Error getting player count: {str(e)}")
+#         return jsonify({"error": "Could not fetch player count"}), 500
 
-@main.route('/signup', methods=['POST'])
-def signup():
+@main.route('/signup/<int:game_id>', methods=['POST'])
+def signup(game_id):
     try:
         data = request.get_json()
         name = data.get('name')
@@ -200,7 +200,7 @@ def signup():
         if not is_valid_phone:
             return jsonify({"error": phone_message}), 400
 
-        current_game = get_current_game()
+        current_game = get_current_game(game_id)
         
         # Check if player exists
         existing_player = Player.query.filter(
@@ -248,8 +248,8 @@ def signup():
         db.session.rollback()
         return jsonify({"error": "An unexpected error occurred"}), 500
 
-@main.route('/cancel', methods=['POST'])
-def cancel():
+@main.route('/cancel/<int:game_id>', methods=['POST'])
+def cancel(game_id):
     try:
         data = request.get_json()
         email = data.get('email')
@@ -257,7 +257,7 @@ def cancel():
         if not email:
             return jsonify({"error": "Email is required!"}), 400
 
-        current_game = get_current_game()
+        current_game = get_current_game(game_id)
         
         # Find the signup
         player = Player.query.filter_by(email=email).first()

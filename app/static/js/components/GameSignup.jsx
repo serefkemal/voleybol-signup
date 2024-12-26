@@ -46,7 +46,8 @@ const GameSignup = () => {
     setMessage('');
 
     try {
-      const response = await fetch('/signup', {
+      const gameId = window.location.pathname.split('/').pop();
+      const response = await fetch(`/signup/${gameId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -70,7 +71,8 @@ const GameSignup = () => {
 
   const handleCancel = async () => {
     try {
-      const response = await fetch('/cancel', {
+      const gameId = window.location.pathname.split('/').pop();
+      const response = await fetch(`/cancel/${gameId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
