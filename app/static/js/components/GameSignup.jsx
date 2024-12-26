@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
 import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogCancel, AlertDialogAction } from './ui/alert-dialog';
+import { format, parseISO } from 'date-fns';
 
 const GameSignup = () => {
   const [formData, setFormData] = useState({
@@ -8,22 +9,26 @@ const GameSignup = () => {
     email: '',
     phone: ''
   });
-  const [playerCount, setPlayerCount] = useState(0);
+  const [game, setGame] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetchPlayerCount();
+    fetchGameData();
   }, []);
 
-  const fetchPlayerCount = async () => {
+  const fetchGameData = async () => {
     try {
-      const response = await fetch('/player-count');
-      const data = await response.json();
-      setPlayerCount(data.count);
+      const gameId = window.location.pathname.split('/').pop();
+      const response = await fetch(`/admin/games/${gameId}/details`);
+      const gameData = await response.json();
+      setGame(gameData);
     } catch (error) {
-      console.error('Error fetching player count:', error);
+      console.error('Error fetching game data:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -85,12 +90,39 @@ const GameSignup = () => {
     }
   };
 
+  if (loading) return <div className="p-4">Loading...</div>;
+  if (!game) return <div className="p-4">Game not found</div>;
+
   return (
     <div className="max-w-md mx-auto p-4">
       <Card>
         <CardHeader>
-          <CardTitle>Weekly Volleyball Signup</CardTitle>
-          <div className="text-sm text-gray-600">Currently signed up: {playerCount} players</div>
+          <CardTitle>Game Details</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="font-semibold">Date:</p>
+            <p>{format(parseISO(game.date), 'MMMM d, yyyy')}</p>
+          </div>
+          <div>
+            <p className="font-semibold">Time:</p>
+            <p>{game.start_time} - {game.end_time}</p>
+          </div>
+          <div>
+            <p className="font-semibold">Location:</p>
+            <p>{game.location}</p>
+          </div>
+          <div>
+            <p className="font-semibold">Players:</p>
+            <p>{game.player_count} / {game.max_players}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Signup for the Game</CardTitle>
+          <div className="text-sm text-gray-600">Enter your information and click sign up.</div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
