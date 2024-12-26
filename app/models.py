@@ -5,6 +5,7 @@ class WeeklyGame(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.DateTime, nullable=False)
     location = db.Column(db.String(200), nullable=False)
+    player_count = db.Column(db.Integer, default=0)
     max_players = db.Column(db.Integer, default=12)
     start_time = db.Column(db.Time, nullable=False)
     end_time = db.Column(db.Time, nullable=False)
@@ -16,6 +17,7 @@ class WeeklyGame(db.Model):
             'id': self.id,
             'date': self.date.date().isoformat(),
             'location': self.location,
+            'player_count': self.player_count,
             'max_players': self.max_players,
             'start_time': self.start_time.strftime('%H:%M') if self.start_time else None,
             'end_time': self.end_time.strftime('%H:%M') if self.end_time else None,

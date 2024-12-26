@@ -4,7 +4,8 @@ module.exports = {
   entry: {
     signup: './app/static/js/signup.js',
     adminLogin: './app/static/js/adminLogin.js',
-    adminDashboard: './app/static/js/adminDashboard.js'
+    adminDashboard: './app/static/js/adminDashboard.js',
+    gameDashboard: './app/static/js/gameDashboard.js'
   },
   output: {
     filename: '[name].bundle.js',

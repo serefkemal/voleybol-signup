@@ -72,13 +72,19 @@ def manage_games():
     games = WeeklyGame.query.order_by(WeeklyGame.date).all()
     return jsonify([game.to_dict() for game in games])
 
+@admin.route('/games/<int:game_id>/details')
+@admin_required
+def game_details(game_id):
+    game = WeeklyGame.query.get_or_404(game_id)
+    return jsonify(game.to_dict())
+
 @admin.route('/games/<int:game_id>/players')
 @admin_required
 def game_players(game_id):
     signups = PlayerGameSignup.query.filter_by(
         game_id=game_id,
         is_cancelled=False
-    ).join(Player).all()
+    ).join(Player).order_by(PlayerGameSignup.signup_time).all()
     
     return jsonify([{
         'id': signup.player.id,

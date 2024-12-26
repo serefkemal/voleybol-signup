@@ -234,6 +234,10 @@ def signup():
         # Create signup
         signup = PlayerGameSignup(player=player, game=current_game)
         db.session.add(signup)
+        
+        # Increment player count
+        current_game.player_count += 1
+        
         db.session.commit()
 
         # Send notifications in background
@@ -278,6 +282,10 @@ def cancel():
         # Cancel the signup
         signup.is_cancelled = True
         player.signup_status = 'cancelled'
+        
+        # Increment player count
+        current_game.player_count -= 1
+        
         db.session.commit()
 
         # Send notifications in background
