@@ -31,4 +31,6 @@ module.exports = {
       '@': path.resolve(__dirname, 'app/static/js'),
     },
   },
+  // Add this for better debugging
+  devtool: 'source-map'
 };

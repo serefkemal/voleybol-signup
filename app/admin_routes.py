@@ -60,7 +60,6 @@ def manage_games():
     if request.method == 'POST':
         data = request.get_json()
         game = WeeklyGame(
-            name=data['name'],
             date=datetime.strptime(data['date'], '%Y-%m-%d').date(),
             start_time=datetime.strptime(data['start_time'], '%H:%M').time(),
             end_time=datetime.strptime(data['end_time'], '%H:%M').time(),
@@ -103,13 +102,19 @@ def get_games():
             WeeklyGame.date >= start,
             WeeklyGame.date <= end
         ).all()
+
+        games_list = []
+        for game in games:
+            game_dict = game.to_dict()
+            # Get active player count
+            player_count = PlayerGameSignup.query.filter_by(
+                game_id=game.id,
+                is_cancelled=False
+            ).count()
+            game_dict['player_count'] = player_count
+            games_list.append(game_dict)
         
-        return jsonify([{
-            'id': game.id,
-            'date': game.date.isoformat(),
-            'location': game.location,
-            'max_players': game.max_players
-        } for game in games])
+        return jsonify(games_list)
         
     except Exception as e:
         current_app.logger.error(f"Error fetching games: {str(e)}")
@@ -118,29 +123,36 @@ def get_games():
 @admin.route('/games', methods=['POST'])
 @admin_required
 def create_game():
-    data = request.get_json()
-    
     try:
-        game_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
+        data = request.get_json()
         
-        # Create game with default values
+        # Parse date and times
+        game_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
+        start_time = datetime.strptime(data['start_time'], '%H:%M').time()
+        end_time = datetime.strptime(data['end_time'], '%H:%M').time()
+        
+        # Check if game already exists on this date
+        existing_game = WeeklyGame.query.filter(
+            WeeklyGame.date == game_date
+        ).first()
+        
+        if existing_game:
+            return jsonify({"error": "A game already exists on this date"}), 400
+        
+        # Create new game
         game = WeeklyGame(
             date=game_date,
-            location=current_app.config['DEFAULT_LOCATION'],
-            max_players=current_app.config['MAX_PLAYERS'],
-            start_time=current_app.config['DEFAULT_GAME_START_TIME'],
-            end_time=current_app.config['DEFAULT_GAME_END_TIME']
+            location=data['location'],
+            start_time=start_time,
+            end_time=end_time,
+            max_players=current_app.config['MAX_PLAYERS']
         )
         
         db.session.add(game)
         db.session.commit()
         
-        return jsonify({
-            'id': game.id,
-            'date': game.date.isoformat(),
-            'location': game.location,
-            'max_players': game.max_players
-        })
+        # Return the created game
+        return jsonify(game.to_dict()), 201
         
     except Exception as e:
         db.session.rollback()
