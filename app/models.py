@@ -57,16 +57,3 @@ class PlayerGameSignup(db.Model):
 
     player = db.relationship('Player', backref=db.backref('signups', lazy=True))
     game = db.relationship('WeeklyGame', backref=db.backref('signups', lazy=True))
-
-class AdminSession(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    session_id = db.Column(db.String(100), unique=True, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    last_activity = db.Column(db.DateTime, default=datetime.utcnow)
-    
-    @staticmethod
-    def clear_old_sessions():
-        # Clear sessions older than 24 hours
-        one_day_ago = datetime.utcnow() - timedelta(days=1)
-        AdminSession.query.filter(AdminSession.last_activity < one_day_ago).delete()
-        db.session.commit()

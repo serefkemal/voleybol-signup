@@ -6,7 +6,7 @@ from app.templates.emails import EMAIL_TEMPLATES
 from datetime import datetime
 import threading, requests
 from app.utils.whatsapp_notifications import WhatsAppNotifier
-
+from flask_login import login_required
 
 
 main = Blueprint('main', __name__)
@@ -154,6 +154,7 @@ def get_player_list(game_id):
     ])
 
 @main.route('/game/<int:game_id>/signup', methods=['POST'])
+@login_required
 def signup_for_game(game_id):
     try:
         data = request.get_json()
@@ -222,6 +223,7 @@ def signup_for_game(game_id):
         return jsonify({"error": "An unexpected error occurred"}), 500
 
 @main.route('/cancel/<int:game_id>', methods=['POST'])
+@login_required
 def cancel(game_id):
     try:
         data = request.get_json()
@@ -273,9 +275,11 @@ def main_page():
     return render_template('main.html')
 
 @main.route('/signup/dashboard')
+@login_required
 def signup_dashboard():
     return render_template('signup/dashboard.html')
 
 @main.route('/game/<int:game_id>')
+@login_required
 def game_signup(game_id):
     return render_template('game.html')

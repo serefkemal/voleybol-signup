@@ -1,84 +1,30 @@
 from flask import Blueprint, jsonify, request, render_template, session, current_app
-from app import db
-from app.models import WeeklyGame, Player, PlayerGameSignup, AdminSession
+from app.extensions import db
+from app.models import WeeklyGame, Player, PlayerGameSignup
 from functools import wraps
 import uuid
 from datetime import datetime, timedelta
+from flask_login import login_required, current_user
+
 
 admin = Blueprint('admin', __name__, url_prefix='/admin')
 
 def admin_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        session_id = session.get('admin_session_id')
-        if not session_id:
-            return jsonify({"error": "Not authenticated"}), 401
-        
-        admin_session = AdminSession.query.filter_by(session_id=session_id).first()
-        if not admin_session:
-            return jsonify({"error": "Invalid session"}), 401
-            
-        # Update last activity
-        admin_session.last_activity = datetime.utcnow()
-        db.session.commit()
-        
+        if not current_user.is_authenticated or not current_user.is_admin():
+            return jsonify({"error": "Unauthorized"}), 403
         return f(*args, **kwargs)
     return decorated_function
 
-@admin.route('/')
-def admin_login():
-    return render_template('admin/login.html')
-
-@admin.route('/login', methods=['POST'])
-def login():
-    data = request.get_json()
-    password = data.get('password')
-    
-    if password == current_app.config['ADMIN_PASSWORD']:
-        # Clear old sessions
-        AdminSession.clear_old_sessions()
-        
-        # Create new session
-        session_id = str(uuid.uuid4())
-        admin_session = AdminSession(session_id=session_id)
-        db.session.add(admin_session)
-        db.session.commit()
-        
-        session['admin_session_id'] = session_id
-        return jsonify({"success": True})
-    
-    return jsonify({"error": "Invalid password"}), 401
-
 @admin.route('/dashboard')
+@login_required
 @admin_required
 def dashboard():
     return render_template('admin/dashboard.html')
 
-@admin.route('/games', methods=['GET', 'POST'])
-@admin_required
-def manage_games():
-    if request.method == 'POST':
-        data = request.get_json()
-        game = WeeklyGame(
-            date=datetime.strptime(data['date'], '%Y-%m-%d').date(),
-            start_time=datetime.strptime(data['start_time'], '%H:%M').time(),
-            end_time=datetime.strptime(data['end_time'], '%H:%M').time(),
-            location=data['location']
-        )
-        db.session.add(game)
-        db.session.commit()
-        return jsonify(game.to_dict())
-    
-    games = WeeklyGame.query.order_by(WeeklyGame.date).all()
-    return jsonify([game.to_dict() for game in games])
-
-@admin.route('/games/<int:game_id>/details')
-@admin_required
-def game_details(game_id):
-    game = WeeklyGame.query.get_or_404(game_id)
-    return jsonify(game.to_dict())
-
 @admin.route('/games/<int:game_id>/players')
+@login_required
 @admin_required
 def game_players(game_id):
     signups = PlayerGameSignup.query.filter_by(
@@ -94,12 +40,38 @@ def game_players(game_id):
         'signup_time': signup.signup_time.isoformat()
     } for signup in signups])
 
-@admin.route('/games', methods=['GET'])
+@admin.route('/games/<int:game_id>/details')
+@login_required
+def game_details(game_id):
+    game = WeeklyGame.query.get_or_404(game_id)
+    return jsonify(game.to_dict())
+
+@admin.route('/games', methods=['GET', 'POST'])
+@login_required
 @admin_required
+def manage_games():
+    if request.method == 'POST':
+        current_app.logger.error("games GET/POST:POST")
+        data = request.get_json()
+        game = WeeklyGame(
+            date=datetime.strptime(data['date'], '%Y-%m-%d').date(),
+            start_time=datetime.strptime(data['start_time'], '%H:%M').time(),
+            end_time=datetime.strptime(data['end_time'], '%H:%M').time(),
+            location=data['location']
+        )
+        db.session.add(game)
+        db.session.commit()
+        return jsonify(game.to_dict())
+    
+    games = WeeklyGame.query.order_by(WeeklyGame.date).all()
+    return jsonify([game.to_dict() for game in games])
+
+@admin.route('/games', methods=['GET'])
+@login_required
 def get_games():
+    current_app.logger.error("games GET:GET")
     start_date = request.args.get('start')
     end_date = request.args.get('end')
-    
     try:
         start = datetime.strptime(start_date, '%Y-%m-%d').date()
         end = datetime.strptime(end_date, '%Y-%m-%d').date()
@@ -127,9 +99,11 @@ def get_games():
         return jsonify({"error": "Failed to fetch games"}), 500
 
 @admin.route('/games', methods=['POST'])
+@login_required
 @admin_required
 def create_game():
     try:
+        current_app.logger.error("games POST:POST")
         data = request.get_json()
         
         # Parse date and times
@@ -166,6 +140,7 @@ def create_game():
         return jsonify({"error": "Failed to create game"}), 500
 
 @admin.route('/games/<int:game_id>', methods=['GET'])
+@login_required
 @admin_required
 def get_game(game_id):
     return render_template('admin/game_dashboard.html')

@@ -3,15 +3,18 @@ from flask_login import login_user, logout_user, login_required, current_user
 from app.extensions import db
 from app.models import Player
 
-auth = Blueprint('auth', __name__)
+auth = Blueprint('auth', __name__, url_prefix='/auth')
 
-@auth.route('/auth/check')
+@auth.route('/check')
 def check_auth():
     if current_user.is_authenticated:
-        return jsonify({'authenticated': True}), 200
-    return jsonify({'authenticated': False}), 401
+        return jsonify({
+            'authenticated': True,
+            'isAdmin': current_user.is_admin()
+        }), 200
+    return jsonify({'authenticated': False, 'isAdmin': False}), 401
 
-@auth.route('/auth/signup', methods=['GET', 'POST'])
+@auth.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'GET':
         return render_template('auth/signup.html')
@@ -36,7 +39,7 @@ def signup():
     login_user(player)
     return jsonify({"message": "Signup successful"}), 201
 
-@auth.route('/auth/login', methods=['GET', 'POST'])
+@auth.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'GET':
         return render_template('auth/login.html')
@@ -53,7 +56,7 @@ def login():
     
     return jsonify({"error": "Invalid credentials"}), 401
 
-@auth.route('/auth/logout')
+@auth.route('/logout')
 @login_required
 def logout():
     logout_user()
