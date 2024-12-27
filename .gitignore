@@ -1,6 +1,8 @@
 *.env
 gcloud_deploy
 *.svg
+/logs
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

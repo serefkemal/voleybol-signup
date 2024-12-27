@@ -136,9 +136,7 @@ def send_signup_notifications(app, player, game):
                         max_players=app.config['MAX_PLAYERS'],
                         recent_change=f"Removed: {player.name}"
                     )
-            
-            
-                
+
         except Exception as e:
             current_app.logger.error(f"Error sending signup notifications: {str(e)}")
 
@@ -149,7 +147,7 @@ def get_player_list(game_id):
     ).join(Player).order_by(PlayerGameSignup.signup_time).all()
     
     return "\n".join([
-        f"{i+1}. {signup.player.name} ({signup.signup_time.strftime('%I:%M %p')})"
+        f"{i+1}. {signup.player.name}"
         for i, signup in enumerate(signups)
     ])
 
