@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
-from app import db  # Update this line
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
+from app.extensions import db
 
 class WeeklyGame(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -25,14 +27,24 @@ class WeeklyGame(db.Model):
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
 
-class Player(db.Model):
+class Player(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), nullable=False)
     phone = db.Column(db.String(15), unique=True, nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
-    signup_status = db.Column(db.String(20), default='signed up')  # 'signed up' or 'cancelled'
+    password_hash = db.Column(db.String(256))
+    role = db.Column(db.String(20), default='player')  # 'admin' or 'player'
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    def is_admin(self):
+        return self.role == 'admin'
 
 class PlayerGameSignup(db.Model):
     id = db.Column(db.Integer, primary_key=True)

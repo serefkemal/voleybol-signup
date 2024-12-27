@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request, render_template, current_app
-from app import db
+from app.extensions import db
 from app.models import Player, WeeklyGame, PlayerGameSignup
 from app.utils.validators import validate_email_format, validate_phone_format
 from app.templates.emails import EMAIL_TEMPLATES
@@ -15,17 +15,6 @@ def get_current_game(game_id):
     current_game = WeeklyGame.query.filter(
         WeeklyGame.id == game_id
     ).first()
-    
-    # if not current_game:
-    #     next_game_date = datetime.now().date()
-    #     current_game = WeeklyGame(
-    #         date=next_game_date,
-    #         location=current_app.config['DEFAULT_LOCATION'],
-    #         start_time=current_app.config['DEFAULT_GAME_START_TIME'],
-    #         end_time=current_app.config['DEFAULT_GAME_END_TIME']
-    #     )
-    #     db.session.add(current_game)
-    #     db.session.commit()
     
     return current_game
 
@@ -164,23 +153,8 @@ def get_player_list(game_id):
         for i, signup in enumerate(signups)
     ])
 
-# @main.route('/player-count', methods=['GET'])
-# def get_player_count():
-#     try:
-#         count = PlayerGameSignup.query.filter_by(
-#             is_cancelled=False,
-#             game_id=get_current_game().id
-#         ).count()
-#         return jsonify({
-#             "count": count,
-#             "max_players": current_app.config['MAX_PLAYERS']
-#         })
-#     except Exception as e:
-#         current_app.logger.error(f"Error getting player count: {str(e)}")
-#         return jsonify({"error": "Could not fetch player count"}), 500
-
-@main.route('/signup/<int:game_id>', methods=['POST'])
-def signup(game_id):
+@main.route('/game/<int:game_id>/signup', methods=['POST'])
+def signup_for_game(game_id):
     try:
         data = request.get_json()
         name = data.get('name')
@@ -220,7 +194,6 @@ def signup(game_id):
 
             player = existing_player
             player.name = name  # Update name if changed
-            player.signup_status = 'signed up'  # Update status when re-signing up
         else:
             player = Player(name=name, email=email, phone=phone)
             db.session.add(player)
@@ -275,7 +248,6 @@ def cancel(game_id):
 
         # Cancel the signup
         signup.is_cancelled = True
-        player.signup_status = 'cancelled'
         
         # Increment player count
         current_game.player_count -= 1
@@ -304,50 +276,6 @@ def main_page():
 def signup_dashboard():
     return render_template('signup/dashboard.html')
 
-@main.route('/signup/game/<int:game_id>')
+@main.route('/game/<int:game_id>')
 def game_signup(game_id):
-    return render_template('signup/game.html')
-
-# @main.route('/test-whatsapp-token')
-# def test_whatsapp_token():
-#     try:
-#         token = current_app.config['WHATSAPP_TOKEN']
-#         phone_id = current_app.config['WHATSAPP_PHONE_ID']
-        
-#         # Basic validation
-#         if not token or not phone_id:
-#             return jsonify({
-#                 "status": "error",
-#                 "message": "Missing token or phone ID"
-#             }), 400
-
-#         # Log token details (safely)
-#         token_info = {
-#             "length": len(token),
-#             "starts_with": token[:5] if token else None,
-#             "contains_whitespace": any(c.isspace() for c in token),
-#             "phone_id": phone_id
-#         }
-
-#         # Test Graph API directly
-#         test_url = "https://graph.facebook.com/v21.0/me"
-#         headers = {"Authorization": f"Bearer {token.strip()}"}
-        
-#         response = requests.get(test_url, headers=headers)
-        
-#         return jsonify({
-#             "status": "info",
-#             "token_info": token_info,
-#             "test_response": {
-#                 "status_code": response.status_code,
-#                 "content": response.json() if response.status_code == 200 else response.text
-#             }
-#         })
-
-#     except Exception as e:
-#         current_app.logger.error(f"Token test error: {str(e)}")
-#         return jsonify({
-#             "status": "error",
-#             "message": str(e)
-#         }), 500
-
+    return render_template('game.html')

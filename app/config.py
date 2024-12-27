@@ -1,6 +1,5 @@
-# config.py
 import os
-from datetime import time
+from datetime import time, timedelta
 
 class Config:
     # Flask
@@ -18,12 +17,6 @@ class Config:
     MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
     MAIL_DEFAULT_SENDER = os.getenv('MAIL_USERNAME')
     
-    # Game Settings
-    DEFAULT_GAME_START_TIME = time(21, 0)  # 9:00 PM
-    DEFAULT_GAME_END_TIME = time(23, 0)    # 11:00 PM
-    DEFAULT_LOCATION = "Hüseyin Avni Sözen Anadolu Lisesi"
-    MAX_PLAYERS = 12
-    
     # Logging
     LOG_FILE = 'volleyball.log'
 
@@ -37,3 +30,7 @@ class Config:
     
     # Admin
     ADMIN_PASSWORD=os.getenv('ADMIN_PASSWORD')
+    
+    # Auth
+    PERMANENT_SESSION_LIFETIME = timedelta(minutes=30)
+    SESSION_REFRESH_EACH_REQUEST = True

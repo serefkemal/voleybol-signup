@@ -52,10 +52,6 @@ const SignupDashboard = () => {
     }
   };
 
-  // const handleGameClick = (game) => {
-  //   window.location.href = `/signup/game/${game.id}`;
-  // };
-
   const handleGameClick = (game) => {
     setSelectedGame(game);
     setIsGameDialogOpen(true);
@@ -64,7 +60,7 @@ const SignupDashboard = () => {
   
   const handleSignupClick = () => {
     if (selectedGame) {
-      window.location.href = `/signup/game/${selectedGame.id}`;
+      window.location.href = `/game/${selectedGame.id}`;
     }
   };
 

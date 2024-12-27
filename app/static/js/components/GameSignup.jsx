@@ -47,7 +47,7 @@ const GameSignup = () => {
 
     try {
       const gameId = window.location.pathname.split('/').pop();
-      const response = await fetch(`/signup/${gameId}`, {
+      const response = await fetch(`/game/${gameId}/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
@@ -72,7 +72,7 @@ const GameSignup = () => {
   const handleCancel = async () => {
     try {
       const gameId = window.location.pathname.split('/').pop();
-      const response = await fetch(`/cancel/${gameId}`, {
+      const response = await fetch(`/game/${gameId}/cancel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),

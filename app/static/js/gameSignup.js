@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const container = document.getElementById('game-signup-root');
   
   if (!container) {
-    console.error('Could not find signup-root element!');
+    console.error('Could not find game-signup-root element!');
     return;
   }
 

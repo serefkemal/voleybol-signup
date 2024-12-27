@@ -3,11 +3,12 @@ const path = require('path');
 module.exports = {
   entry: {
     main: './app/static/js/main.js',
+    auth: './app/static/js/auth.js',
     gameSignup: './app/static/js/gameSignup.js',
+    gameDashboard: './app/static/js/gameDashboard.js',
     signupDashboard: './app/static/js/signupDashboard.js',
     adminLogin: './app/static/js/adminLogin.js',
-    adminDashboard: './app/static/js/adminDashboard.js',
-    gameDashboard: './app/static/js/gameDashboard.js'
+    adminDashboard: './app/static/js/adminDashboard.js'
   },
   output: {
     filename: '[name].bundle.js',
