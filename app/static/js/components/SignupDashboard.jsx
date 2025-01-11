@@ -75,19 +75,19 @@ const SignupDashboard = () => {
             <AlertDialogDescription>
               <div className="space-y-4">
                 <div>
-                  <p className="font-semibold">Date:</p>
+                  <p className="font-filsonsoft">Date:</p>
                   <p>{format(parseISO(selectedGame.date), 'MMMM d, yyyy')}</p>
                 </div>
                 <div>
-                  <p className="font-semibold">Time:</p>
+                  <p className="font-filsonsoft">Time:</p>
                   <p>{selectedGame.start_time} - {selectedGame.end_time}</p>
                 </div>
                 <div>
-                  <p className="font-semibold">Location:</p>
+                  <p className="font-filsonsoft">Location:</p>
                   <p>{selectedGame.location}</p>
                 </div>
                 <div>
-                  <p className="font-semibold">Players:</p>
+                  <p className="font-filsonsoft">Players:</p>
                   <p>{selectedGame.player_count} / {selectedGame.max_players}</p>
                 </div>
                 
@@ -131,7 +131,7 @@ const SignupDashboard = () => {
           >
             ←
           </button>
-          <h2 className="text-xl font-semibold">
+          <h2 className="text-xl font-filsonsoft">
             {format(currentMonth, 'MMMM yyyy')}
           </h2>
           <button
@@ -165,7 +165,7 @@ const SignupDashboard = () => {
                 onClick={() => setSelectedDate(isSelected ? null : day)}
                 className={`
                   h-20 p-1 border rounded relative
-                  ${!isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white'}
+                  ${!isCurrentMonth ? 'bg-gray-50 text-gray-400' : 'bg-white'} //calender color
                   ${isSelected ? 'ring-2 ring-orange-400' : ''}
                   ${isToday(day) ? 'border-orange-500' : 'border-gray-200'}
                   hover:bg-gray-50 transition-colors
@@ -204,8 +204,8 @@ const SignupDashboard = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <div className="bg-white rounded-lg shadow">
+    <div className="bg-[#1e2a4a] max-w-4xl mx-auto p-4">
+      <div className="bg-[#1e2a4a] rounded-lg shadow">
         {renderCalendar()}
       </div>
       {renderGameDialog()}

@@ -6,7 +6,7 @@ from app.templates.emails import EMAIL_TEMPLATES
 from datetime import datetime
 import threading, requests
 from app.utils.whatsapp_notifications import WhatsAppNotifier
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 
 main = Blueprint('main', __name__)
@@ -51,7 +51,7 @@ def send_signup_notifications(app, player, game):
                     game_end_time=game_end,
                     game_location=game.location,
                     position=player_position,
-                    max_players=app.config['MAX_PLAYERS']
+                    max_players=game.max_players
                 )
             
                 # Add WhatsApp notification
@@ -151,122 +151,74 @@ def get_player_list(game_id):
         for i, signup in enumerate(signups)
     ])
 
+@main.route('/game/<int:game_id>/check_signup', methods=['GET'])
+@login_required
+def check_signup(game_id):
+    try:
+        signup = PlayerGameSignup.query.filter_by(
+            player_id=current_user.id,
+            game_id=game_id,
+            is_cancelled=False
+        ).first()
+        return jsonify({"is_signed_up": bool(signup)})
+    except Exception as e:
+        current_app.logger.error(f"Error checking signup: {str(e)}")
+        return jsonify({"error": "Failed to check signup status"}), 500
+
 @main.route('/game/<int:game_id>/signup', methods=['POST'])
 @login_required
 def signup_for_game(game_id):
     try:
-        data = request.get_json()
-        name = data.get('name')
-        email = data.get('email')
-        phone = data.get('phone')
-
-        # Basic validation
-        if not all([name, email, phone]):
-            return jsonify({"error": "All fields are required!"}), 400
-
-        # Email and phone validation
-        is_valid_email, email_message = validate_email_format(email)
-        if not is_valid_email:
-            return jsonify({"error": f"Invalid email: {email_message}"}), 400
-
-        is_valid_phone, phone_message = validate_phone_format(phone)
-        if not is_valid_phone:
-            return jsonify({"error": phone_message}), 400
-
-        current_game = get_current_game(game_id)
+        game = WeeklyGame.query.get_or_404(game_id)
         
-        # Check if player exists
-        existing_player = Player.query.filter(
-            (Player.phone == phone) | (Player.email == email)
+        existing_signup = PlayerGameSignup.query.filter_by(
+            player_id=current_user.id,
+            game_id=game_id,
+            is_cancelled=False
         ).first()
-
-        if existing_player:
-            # Check if already signed up
-            existing_signup = PlayerGameSignup.query.filter_by(
-                player_id=existing_player.id,
-                game_id=current_game.id,
-                is_cancelled=False
-            ).first()
+        
+        if existing_signup:
+            return jsonify({"error": "Already signed up for this game"}), 400
             
-            if existing_signup:
-                return jsonify({"error": "Player with this phone or email already signed up!"}), 400
+        if game.player_count >= game.max_players:
+            return jsonify({"error": "Game is full"}), 400
 
-            player = existing_player
-            player.name = name  # Update name if changed
-        else:
-            player = Player(name=name, email=email, phone=phone)
-            db.session.add(player)
-
-        # Create signup
-        signup = PlayerGameSignup(player=player, game=current_game)
+        signup = PlayerGameSignup(player=current_user, game=game)
         db.session.add(signup)
-        
-        # Increment player count
-        current_game.player_count += 1
-        
+        game.player_count += 1
         db.session.commit()
 
-        # Send notifications in background
-        app = current_app._get_current_object()  # Get the actual app object
-        threading.Thread(
-            target=send_signup_notifications,
-            args=(app, player, current_game)
-        ).start()
-
-        return jsonify({"message": f"{player.name} has signed up successfully!"}), 201
+        return jsonify({"message": "Successfully signed up for the game!"}), 201
 
     except Exception as e:
         current_app.logger.error(f"Error in signup: {str(e)}")
         db.session.rollback()
-        return jsonify({"error": "An unexpected error occurred"}), 500
+        return jsonify({"error": "Failed to sign up"}), 500
 
-@main.route('/cancel/<int:game_id>', methods=['POST'])
+@main.route('/game/<int:game_id>/cancel', methods=['POST'])
 @login_required
-def cancel(game_id):
+def cancel_signup(game_id):
     try:
-        data = request.get_json()
-        email = data.get('email')
-
-        if not email:
-            return jsonify({"error": "Email is required!"}), 400
-
-        current_game = get_current_game(game_id)
-        
-        # Find the signup
-        player = Player.query.filter_by(email=email).first()
-        if not player:
-            return jsonify({"error": "Player not found!"}), 404
-
         signup = PlayerGameSignup.query.filter_by(
-            player_id=player.id,
-            game_id=current_game.id,
+            player_id=current_user.id,
+            game_id=game_id,
             is_cancelled=False
         ).first()
-
+        
         if not signup:
-            return jsonify({"error": "No active signup found!"}), 404
+            return jsonify({"error": "No active signup found"}), 404
 
-        # Cancel the signup
         signup.is_cancelled = True
-        
-        # Increment player count
-        current_game.player_count -= 1
-        
+        signup.game.player_count -= 1
         db.session.commit()
 
-        # Send notifications in background
-        app = current_app._get_current_object()  # Get the actual app object
-        threading.Thread(
-            target=send_signup_notifications,
-            args=(app, player, current_game)
-        ).start()
-
-        return jsonify({"message": f"{player.name}'s signup has been canceled!"}), 200
+        return jsonify({"message": "Successfully cancelled signup"}), 200
 
     except Exception as e:
         current_app.logger.error(f"Error in cancel: {str(e)}")
         db.session.rollback()
-        return jsonify({"error": "An unexpected error occurred"}), 500
+        return jsonify({"error": "Failed to cancel signup"}), 500
+
 
 @main.route('/')
 def main_page():
